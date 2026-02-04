@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: @application.name@
+  config:
+    import: classpath:base.yml,classpath:cache.yml,classpath:config.yml
+  cloud:
+    sentinel:
+      transport:
+        dashboard: ${nft.turbo.sentinel.url}
+      datasource:
+        flow:
+          nacos:
+            server-addr: ${nft.turbo.nacos.server.url}
+            data-id: gateway-flow-rules
+            group-id: SENTINEL_GROUP
+            rule-type: GW_FLOW
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedHeaders: '*'
+            allowedMethods: '*'
+            allowedOrigins: '*'
+      routes:
+#        路由一：认证服务
+        - id: nfturbo-auth #路由ID，路由规则的唯一名字，主要作用用于日志记录和区分。如果报错了，会在日志里看到nfturbo-auth出了问题
+          uri: lb://nfturbo-auth #转发的目标地址，lb：负载均很。这意味这网关会说:"nacos,帮我查查所有叫nfturbo-auth的服务活着的都在那？挑一个给我"
+          predicates: #路由断言，匹配规则
+            - Path=/auth/**,/token/** # eg网关发现如果访问路径匹配/auth/**，就会命中这个路由
+#          路由二：业务服务
+        - id: nfturbo-business
+          uri: lb://nfturbo-business
+          predicates:
+            - Path=/trade/**,/order/**,/user/**,/collection/**,/wxPay/**,/box/**
+#        - id: nfturbo-collection
+#          uri: lb://nfturbo-collection
+#          predicates:
+#            - Path=/collection/**
+#        - id: nfturbo-order
+#          uri: lb://nfturbo-order
+#          predicates:
+#            - Path=/order/**
+#        - id: nfturbo-trade
+#          uri: lb://nfturbo-trade
+#          predicates:
+#            - Path=/trade/**
+#        - id: nfturbo-user
+#          uri: lb://nfturbo-user
+#          predicates:
+#            - Path=/user/**
+#        - id: nfturbo-pay
+#          uri: lb://nfturbo-pay
+#          predicates:
+#            - Path=/wxPay/**
+server:
+  port: 8081
