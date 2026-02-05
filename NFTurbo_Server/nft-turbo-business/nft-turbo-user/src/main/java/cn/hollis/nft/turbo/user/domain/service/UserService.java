@@ -209,13 +209,16 @@ public class UserService extends ServiceImpl<UserMapper, User> implements Initia
         User user = userMapper.findById(userAuthRequest.getUserId());
         Assert.notNull(user, () -> new UserException(USER_NOT_EXIST));
 
+//        已经认证了
         if (user.getState() == UserStateEnum.AUTH || user.getState() == UserStateEnum.ACTIVE) {
             userOperatorResponse.setSuccess(true);
             userOperatorResponse.setUser(UserConvertor.INSTANCE.mapToVo(user));
             return userOperatorResponse;
         }
 
+//        如果条件不成立，则抛异常
         Assert.isTrue(user.getState() == UserStateEnum.INIT, () -> new UserException(USER_STATUS_IS_NOT_INIT));
+//        如果认证失败，则抛异常
         Assert.isTrue(authService.checkAuth(userAuthRequest.getRealName(), userAuthRequest.getIdCard()), () -> new UserException(USER_AUTH_FAIL));
         user.auth(userAuthRequest.getRealName(), userAuthRequest.getIdCard());
         boolean result = updateById(user);
